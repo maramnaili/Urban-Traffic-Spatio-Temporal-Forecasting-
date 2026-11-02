@@ -172,17 +172,4 @@ Then visit `http://localhost:8000`.
 
 To publish the dashboard with GitHub Pages, configure Pages to deploy from the repository root (or move the site to the publishing directory selected for the project). The page is static: its metrics are embedded in `index.html` and are not fetched from the notebooks at runtime.
 
-## Reproducibility and limitations
 
-- The reported tables above reflect outputs already stored in the notebooks; a fresh run is not guaranteed to reproduce the exact same scores.
-- Results can vary with random initialization, training settings, hardware, package versions, and dataset preprocessing.
-- The notebooks use Kaggle-specific filesystem paths and need the dataset attachments or updated paths before they can run.
-- Fast Optuna/training settings limit the scope of the recorded experiments.
-- The notebooks use different models and prediction horizons: the multi-model notebook predicts 15 minutes ahead, while the GNN–Transformer notebook predicts one hour ahead.
-- The dashboard is a hand-maintained static view of the GNN–Transformer experiment. Update its embedded metrics and labels if notebook results or settings change.
-
-## Data, licensing, and citation
-
-This repository does not include PEMS-BAY or METR-LA data files. Obtain them from their original or authorized distribution sources and follow the applicable dataset terms. Do not commit raw datasets, credentials, or large generated checkpoints.
-
-No repository license file is currently included. Add a `LICENSE` file before publishing if you want to specify the terms for using, modifying, or redistributing this project's code. A code license does not replace the terms that apply to the datasets.
