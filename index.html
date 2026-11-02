@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#e5ebf3">
+  <title>GNN × Transformer Demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #e5ebf3;
+      --panel: #f7f9fc;
+      --panel-soft: #e9eff7;
+      --line: #ccd7e5;
+      --muted: #56667c;
+      --text: #17243b;
+      --accent: #2868bd;
+      --teal: #3a9d82;
+      --purple: #8c6bc4;
+      --orange: #f28a36;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background:
+        radial-gradient(ellipse at 78% -15%, rgba(242, 138, 54, .16), transparent 35rem),
+        radial-gradient(ellipse at 8% 12%, rgba(52, 120, 212, .13), transparent 32rem),
+        var(--bg);
+      color: var(--text);
+    }
+
+    button, select { font: inherit; }
+    [hidden] { display: none !important; }
+    button:focus-visible, select:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .shell { max-width: 1440px; margin: 0 auto; padding: 28px 42px 48px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 48px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 750; letter-spacing: .02em; }
+    .brand-mark {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border: 1px solid rgba(52, 120, 212, .2);
+      border-radius: 12px;
+      background: rgba(52, 120, 212, .08);
+      color: var(--accent);
+      font-size: 19px;
+    }
+    .brand small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; font-weight: 500; letter-spacing: .04em; }
+    .top-status { display: flex; align-items: center; gap: 9px; color: #56657a; font-size: 12px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 12px rgba(58, 157, 130, .32); }
+
+    .hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+    .eyebrow { margin: 0 0 11px; color: var(--accent); font-size: 11px; font-weight: 750; letter-spacing: .16em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(29px, 4vw, 42px); font-weight: 690; letter-spacing: -.045em; line-height: 1.12; }
+    .hero-copy { max-width: 650px; margin: 12px 0 0; color: var(--muted); font-size: 14px; line-height: 1.7; }
+    .select-wrap { display: grid; min-width: 230px; gap: 8px; }
+    .select-wrap label, .control label { color: var(--muted); font-size: 11px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+    select {
+      width: 100%;
+      min-height: 44px;
+      padding: 0 38px 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #f7f9fc;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 22px;
+      padding: 14px 16px;
+      border: 1px solid #c8d8eb;
+      border-radius: 12px;
+      background: #e8eff8;
+      color: #44566f;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .notice-icon { color: var(--accent); font-size: 16px; }
+    .notice strong { color: var(--text); font-weight: 650; }
+
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .metric-card, .panel {
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: linear-gradient(145deg, #f9fafc, #f3f6fa);
+      box-shadow: 0 5px 18px rgba(31, 52, 83, .07);
+    }
+    .metric-card { min-height: 128px; padding: 18px 19px; }
+    .metric-label { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 12px; }
+    .metric-icon { color: #8290a4; font-size: 15px; }
+    .metric-value { margin-top: 15px; font-size: 29px; font-weight: 680; letter-spacing: -.04em; }
+    .metric-unit { margin-left: 5px; color: #68778c; font-size: 13px; font-weight: 500; letter-spacing: 0; }
+    .metric-foot { margin-top: 5px; color: #6b798d; font-size: 11px; }
+
+    .main-grid { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(275px, .85fr); gap: 18px; align-items: stretch; }
+    .panel { padding: 21px; }
+    .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .panel h2 { margin: 0; font-size: 15px; font-weight: 650; letter-spacing: -.01em; }
+    .panel-subtitle { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+    .control { display: grid; min-width: 128px; gap: 6px; }
+    .control select { min-height: 36px; border-radius: 8px; font-size: 12px; }
+    .chart-legend { display: flex; align-items: center; gap: 8px; margin-top: 21px; color: #58677b; font-size: 11px; }
+    .legend-swatch { width: 8px; height: 8px; border-radius: 3px; background: var(--accent); }
+    .chart { width: 100%; min-height: 235px; margin-top: 8px; overflow: visible; }
+    .chart text { font-family: inherit; }
+    .chart-empty { display: grid; min-height: 235px; place-items: center; color: var(--muted); font-size: 13px; text-align: center; }
+    .chart-note { margin: 2px 0 0; color: #64748a; font-size: 11px; line-height: 1.5; }
+
+    .experiment { display: flex; flex-direction: column; }
+    .experiment-title { display: flex; align-items: center; gap: 10px; }
+    .model-badge { display: grid; width: 35px; height: 35px; place-items: center; border-radius: 10px; background: rgba(52, 120, 212, .1); color: var(--accent); font-size: 14px; font-weight: 700; }
+    .experiment h2 { font-size: 14px; }
+    .experiment-name { margin: 20px 0 5px; font-size: 22px; font-weight: 650; letter-spacing: -.035em; }
+    .experiment-desc { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .divider { height: 1px; margin: 20px 0; background: var(--line); }
+    .detail-list { display: grid; gap: 15px; margin: 0; }
+    .detail-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; font-size: 12px; }
+    .detail-row dt { color: var(--muted); }
+    .detail-row dd { margin: 0; color: #27364d; font-weight: 550; text-align: right; }
+    .best-result { margin-top: auto; padding: 13px 14px; border: 1px solid rgba(242, 138, 54, .35); border-radius: 10px; background: #fff1e2; }
+    .best-result span { display: block; color: var(--muted); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+    .best-result strong { display: block; margin-top: 6px; color: #cf6818; font-size: 14px; font-weight: 650; }
+
+    .table-panel { margin-top: 18px; padding-bottom: 6px; }
+    .table-wrap { width: 100%; overflow-x: auto; }
+    table { width: 100%; min-width: 520px; margin-top: 16px; border-collapse: collapse; text-align: left; }
+    th { padding: 11px 12px; border-bottom: 1px solid var(--line); color: #56667c; font-size: 10px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+    td { padding: 14px 12px; border-bottom: 1px solid rgba(40, 59, 85, .09); color: #27364d; font-size: 12px; }
+    tr:last-child td { border-bottom: 0; }
+    .approach { display: flex; align-items: center; gap: 9px; white-space: nowrap; }
+    .approach-dot { width: 7px; height: 7px; border-radius: 50%; background: #a8b3c2; }
+    tr.is-best .approach-dot { background: var(--orange); box-shadow: 0 0 8px rgba(242, 138, 54, .35); }
+    tr.is-best td { color: #17243b; }
+    .score-pill { display: inline-flex; padding: 4px 8px; border-radius: 6px; background: rgba(242, 138, 54, .12); color: #bc5d11; font-size: 10px; font-weight: 650; }
+    .footer { display: flex; justify-content: space-between; gap: 20px; margin-top: 23px; color: #78869a; font-size: 10px; line-height: 1.6; }
+    .footer a { color: #52657e; text-decoration: none; }
+    .footer a:hover { color: var(--orange); }
+
+    @media (max-width: 900px) {
+      .shell { padding: 24px 24px 36px; }
+      .main-grid { grid-template-columns: 1fr; }
+      .experiment { min-height: 330px; }
+    }
+    @media (max-width: 620px) {
+      .shell { padding: 19px 15px 28px; }
+      .topbar { margin-bottom: 34px; }
+      .top-status { font-size: 0; }
+      .hero { align-items: stretch; flex-direction: column; }
+      .select-wrap { min-width: 0; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .metric-card { min-height: 112px; padding: 14px; }
+      .metric-value { font-size: 25px; }
+      .panel { padding: 17px 14px; }
+      .panel-head { flex-direction: column; }
+      .control { width: 100%; }
+      .footer { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">⌁</div>
+        <div><small>TRAFFIC FORECASTING · DEMO</small></div>
+      </div>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">Traffic forecasting lab</p>
+        <h1 id="page-title">Explore the results</h1>
+        <p class="hero-copy">Explore the GNN–Transformer model’s performance and its transfer across road networks.</p>
+      </div>
+      <div class="select-wrap">
+        <label for="dataset-select">Dataset</label>
+        <select id="dataset-select" aria-label="Choose a dataset">
+          <option value="pems">PEMS-BAY · training</option>
+          <option value="metr">METR-LA · generalization</option>
+        </select>
+      </div>
+    </section>
+
+
+    <section class="metrics" aria-label="Performance metrics">
+      <article class="metric-card"><div class="metric-label">Mean absolute error <span class="metric-icon">↘</span></div><div class="metric-value" id="kpi-mae">—</div><div class="metric-foot">MAE · lower is better</div></article>
+      <article class="metric-card"><div class="metric-label">Root mean squared error <span class="metric-icon">⌁</span></div><div class="metric-value" id="kpi-rmse">—</div><div class="metric-foot">RMSE · lower is better</div></article>
+      <article class="metric-card"><div class="metric-label">Percentage error <span class="metric-icon">％</span></div><div class="metric-value" id="kpi-mape">—</div><div class="metric-foot">MAPE · lower is better</div></article>
+      <article class="metric-card"><div class="metric-label">Coefficient of determination <span class="metric-icon">R²</span></div><div class="metric-value" id="kpi-r2">—</div><div class="metric-foot">R² · higher is better</div></article>
+    </section>
+
+    <section class="main-grid">
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Performance comparison</h2>
+            <p class="panel-subtitle" id="chart-subtitle">Model results on the PEMS-BAY test set</p>
+          </div>
+          <div class="control">
+            <label for="metric-select">Metric</label>
+            <select id="metric-select" aria-label="Choose a metric to compare">
+              <option value="mae">MAE · mph</option>
+              <option value="rmse">RMSE · mph</option>
+              <option value="mape">MAPE · %</option>
+              <option value="r2">R²</option>
+            </select>
+          </div>
+        </div>
+        <div class="chart-legend"><span class="legend-swatch" aria-hidden="true"></span><span id="legend-label">GNN–Transformer</span></div>
+        <svg id="results-chart" class="chart" viewBox="0 0 900 280" role="img" aria-label="Comparative results chart"></svg>
+        <p class="chart-note" id="chart-note"></p>
+      </article>
+
+      <aside class="panel experiment">
+        <div class="experiment-title">
+          <div class="model-badge" aria-hidden="true">G×T</div>
+          <div><h2>Experiment setup</h2><p class="panel-subtitle" id="experiment-domain">Source domain</p></div>
+        </div>
+        <p class="experiment-name" id="experiment-name">GNN–Transformer</p>
+        <p class="experiment-desc" id="experiment-desc"></p>
+        <div class="divider"></div>
+        <dl class="detail-list" id="experiment-details"></dl>
+        <div class="best-result"><span>Selected result</span><strong id="selected-result">—</strong></div>
+      </aside>
+    </section>
+
+    <section class="panel table-panel">
+      <div class="panel-head">
+        <div><h2>Detailed results</h2><p class="panel-subtitle" id="table-subtitle">Reported metrics on PEMS-BAY</p></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Model / approach</th><th>MAE · mph</th><th>RMSE · mph</th><th>MAPE · %</th><th>R²</th></tr></thead>
+          <tbody id="results-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>Forecast horizon: 12 × 5-minute steps · input window: 12 steps</span>
+    </footer>
+  </main>
+
+  <script>
+    const experiments = {
+      pems: {
+        name: "GNN–Transformer",
+        domain: "Source domain",
+        description: "A hybrid architecture with graph layers and Transformer blocks to model spatial and temporal dependencies.",
+        details: [
+          ["Sensors", "325"],
+          ["Input window", "12 steps · 60 min"],
+          ["Forecast horizon", "12 steps · 60 min"],
+          ["Parameters", "188,540"],
+        ],
+        subtitle: "Model results on the PEMS-BAY test set",
+        tableSubtitle: "Model metrics on PEMS-BAY",
+        rows: [
+          { key: "gnn-transformer", label: "GNN–Transformer", mae: 4.260968, rmse: 7.494622, mape: 10.03, r2: 0.3983 }
+        ]
+      },
+      metr: {
+        name: "GNN–Transformer",
+        domain: "Cross-network transfer",
+        description: "Generalization evaluation on METR-LA using three strategies: direct transfer, decoder fine-tuning, or full retraining.",
+        details: [
+          ["Target sensors", "207"],
+          ["Input window", "12 steps · 60 min"],
+          ["Forecast horizon", "12 steps · 60 min"],
+          ["Trainable parameters (B)", "6,892"],
+          ["Source → target", "PEMS-BAY → METR-LA"]
+        ],
+        subtitle: "Generalization strategy comparison on METR-LA",
+        tableSubtitle: "Metrics on the METR-LA test set",
+        note: "Approach C retrains the model on the target dataset. It is a reference baseline, not a transfer without adaptation.",
+        rows: [
+          { key: "A", label: "A · Zero-shot + BN recalibration", mae: 15.303073, rmse: 21.782532, mape: 32.52, r2: 0.0867 },
+          { key: "B", label: "B · Decoder fine-tuning", mae: 12.203102, rmse: 18.461308, mape: 29.46, r2: 0.3440 },
+          { key: "C", label: "C · Full retraining", mae: 10.356481, rmse: 17.384211, mape: 24.99, r2: 0.4183 }
+        ]
+      }
+    };
+
+    const colors = ["#3478d4", "#f28a36", "#3a9d82"];
+    const datasetSelect = document.getElementById("dataset-select");
+    const metricSelect = document.getElementById("metric-select");
+    let activeDataset = "pems";
+
+    function format(value, digits = 2) {
+      return new Intl.NumberFormat("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
+    }
+
+    function getSelectedRow(experiment) {
+      return experiment.rows.find((row) => row.key === "C") || experiment.rows[0];
+    }
+
+    function render() {
+      const experiment = experiments[activeDataset];
+      const selected = getSelectedRow(experiment);
+      const isMetr = activeDataset === "metr";
+      const metric = metricSelect.value;
+
+      document.getElementById("kpi-mae").innerHTML = `${format(selected.mae)}<span class="metric-unit">mph</span>`;
+      document.getElementById("kpi-rmse").innerHTML = `${format(selected.rmse)}<span class="metric-unit">mph</span>`;
+      document.getElementById("kpi-mape").innerHTML = `${format(selected.mape)}<span class="metric-unit">%</span>`;
+      document.getElementById("kpi-r2").textContent = format(selected.r2, 4);
+      document.getElementById("chart-subtitle").textContent = experiment.subtitle;
+      document.getElementById("table-subtitle").textContent = experiment.tableSubtitle;
+      document.getElementById("legend-label").textContent = isMetr ? "Generalization strategies" : "GNN–Transformer";
+      document.getElementById("experiment-domain").textContent = experiment.domain;
+      document.getElementById("experiment-name").textContent = experiment.name;
+      document.getElementById("experiment-desc").textContent = experiment.description;
+      document.getElementById("chart-note").textContent = experiment.note;
+      document.getElementById("experiment-details").innerHTML = experiment.details
+        .map(([label, value]) => `<div class="detail-row"><dt>${label}</dt><dd>${value}</dd></div>`).join("");
+      document.getElementById("selected-result").textContent = isMetr
+        ? `${selected.label} · MAE ${format(selected.mae)} mph`
+        : `MAE ${format(selected.mae)} mph · best result`;
+
+      const bestKey = isMetr ? "C" : "gnn-transformer";
+      document.getElementById("results-table").innerHTML = experiment.rows.map((row, index) => {
+        const best = row.key === bestKey;
+        return `<tr class="${best ? "is-best" : ""}">
+          <td><span class="approach"><span class="approach-dot"></span>${row.label}</span></td>
+          <td>${format(row.mae, 4)}</td><td>${format(row.rmse, 4)}</td><td>${format(row.mape, 2)} %</td><td>${format(row.r2, 4)}</td>
+        </tr>`;
+      }).join("");
+
+      renderChart(experiment, metric);
+    }
+
+    function renderChart(experiment, metric) {
+      const svg = document.getElementById("results-chart");
+      const labels = { mae: "MAE (mph)", rmse: "RMSE (mph)", mape: "MAPE (%)", r2: "R²" };
+      const values = experiment.rows.map((row) => row[metric]);
+      const maxValue = Math.max(...values) || 1;
+      const axisMax = metric === "r2" ? 1 : maxValue * 1.16;
+      const left = 238;
+      const right = 860;
+      const top = 14;
+      const rowHeight = 62;
+      const barHeight = 15;
+      let markup = "";
+
+      for (let tick = 0; tick <= 4; tick++) {
+        const x = left + (right - left) * tick / 4;
+        const val = axisMax * tick / 4;
+        markup += `<line x1="${x}" y1="${top}" x2="${x}" y2="${top + rowHeight * experiment.rows.length - 8}" stroke="#e1e7ef" stroke-width="1"/>`;
+        markup += `<text x="${x}" y="${top + rowHeight * experiment.rows.length + 12}" text-anchor="middle" fill="#78869a" font-size="10">${format(val, metric === "r2" ? 2 : 1)}</text>`;
+      }
+
+      experiment.rows.forEach((row, index) => {
+        const y = top + index * rowHeight + 10;
+        const width = (right - left) * row[metric] / axisMax;
+        const color = colors[index % colors.length];
+        markup += `<text x="0" y="${y + 11}" fill="#34445b" font-size="12">${row.label}</text>`;
+        markup += `<rect x="${left}" y="${y}" width="${right - left}" height="${barHeight}" rx="7" fill="#edf1f6"/>`;
+        markup += `<rect x="${left}" y="${y}" width="${Math.max(width, 2)}" height="${barHeight}" rx="7" fill="${color}" opacity=".92"><title>${row.label}: ${format(row[metric], metric === "r2" ? 4 : 2)} ${labels[metric]}</title></rect>`;
+        markup += `<text x="${Math.min(left + width + 10, right - 4)}" y="${y + 12}" fill="#26354b" font-size="11">${format(row[metric], metric === "r2" ? 4 : 2)}</text>`;
+      });
+
+      markup += `<text x="${left}" y="${top + rowHeight * experiment.rows.length + 34}" fill="#78869a" font-size="10">${labels[metric]}</text>`;
+      svg.innerHTML = markup;
+      svg.setAttribute("aria-label", `${labels[metric]}: ${experiment.rows.map((row) => `${row.label}, ${format(row[metric], 2)}`).join("; ")}`);
+    }
+
+    datasetSelect.addEventListener("change", () => {
+      activeDataset = datasetSelect.value;
+      render();
+    });
+    metricSelect.addEventListener("change", render);
+
+    render();
+  </script>
+</body>
+</html>
